@@ -1,30 +1,28 @@
+import pluggable.scm.*;
+
+SCMProvider scmProvider = SCMProviderHandler.getScmProvider("${SCM_PROVIDER_ID}", binding.variables)
+
 // Folders
 def workspaceFolderName = "${WORKSPACE_NAME}"
 def projectFolderName = "${PROJECT_NAME}"
+def projectScmNamespace = "${SCM_NAMESPACE}"
 
 // Jobs
 def createValidateCartridgeRepoJob = freeStyleJob(projectFolderName + "/ValidateCartridgeRepo")
+
+def newCartridgeGitRepo = "my-new-cartridge";
  
  // Setup Job 
  createValidateCartridgeRepoJob.with{
     parameters{
-            stringParam("CARTRIDGE_REPO","ssh://jenkins@gerrit:29418/${projectFolderName}/my-new-cartridge","Git URL of the cartridge you want to validate.")
+            stringParam("CARTRIDGE_REPO",'${newCartridgeGitRepo}',"Git URL of the cartridge you want to validate.")
             stringParam("CARTRIDGE_SDK_VERSION","1.0","Cartridge SDK version specification to validate against.")
     }
     environmentVariables {
         env('WORKSPACE_NAME',workspaceFolderName)
         env('PROJECT_NAME',projectFolderName)
     }
-    scm {
-            git{
-                remote{
-                    name("origin")
-                    url('${CARTRIDGE_REPO}')
-                    credentials("adop-jenkins-master")
-                }
-                branch("*/master")
-            }
-    }
+    scm scmProvider.get(projectScmNamespace,'${CARTRIDGE_REPO}', "*/master", "adop-jenkins-master", null)
     wrappers {
         preBuildCleanup()
         injectPasswords()

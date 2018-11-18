@@ -1,30 +1,28 @@
+import pluggable.scm.*;
+
+SCMProvider scmProvider = SCMProviderHandler.getScmProvider("${SCM_PROVIDER_ID}", binding.variables)
+
 // Folders
 def workspaceFolderName = "${WORKSPACE_NAME}"
 def projectFolderName = "${PROJECT_NAME}"
+def projectScmNamespace = "${SCM_NAMESPACE}"
 
 // Jobs
 def createNewCartridgeJob = freeStyleJob(projectFolderName + "/CreateNewCartridge")
+
+def skeletonAppgitRepo = "adop-cartridge-skeleton";
  
  // Setup Job 
  createNewCartridgeJob.with{
     parameters{
-            stringParam("BASE_CARTRIDGE","https://github.com/Accenture/adop-cartridge-skeleton.git","Git URL of the cartridge you want to base the new cartridge on.")
+            stringParam("BASE_CARTRIDGE",'${skeletonAppgitRepo}',"Git URL of the cartridge you want to base the new cartridge on.")
             stringParam("NEW_CARTRIDGE","my-new-cartridge","Name for your new cartridge. This will be automatically namespaced using the current Workspace and Project name.")
     }
     environmentVariables {
         env('WORKSPACE_NAME',workspaceFolderName)
         env('PROJECT_NAME',projectFolderName)
     }
-    scm {
-            git{
-                remote{
-                    name("origin")
-                    url('${BASE_CARTRIDGE}')
-                    credentials("adop-jenkins-master")
-                }
-                branch("*/master")
-            }
-    }
+    scm scmProvider.get(projectScmNamespace, skeletonAppgitRepo, "*/master", "adop-jenkins-master", null)
     wrappers {
         preBuildCleanup()
         injectPasswords()
